@@ -23,18 +23,12 @@ function retstr = example_Par(instruct)
 % Input values from the web-interface must be extracted from a text string.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Extraction of input variables from a text string.
-% dist = instruct.dist;
-% mu=str2num(instruct.var1);
-% sigma=str2num(instruct.var2);
-% philosopherCount = str2num(instruct.philosopherCount);
-% timesteps = str2num(instruct.timesteps);
-% eatingTimeOffset = str2num(instruct.eatingTimeOffset);
-dist = 'normal';
-mu = 4;
-sigma = 2.5;
-philosopherCount = 7;
-timesteps = 100;
-eatingTimeOffset = 0;
+dist = instruct.dist;
+var1=str2num(instruct.var1);
+var2=str2num(instruct.var2);
+philosopherCount = str2num(instruct.philosopherCount);
+timesteps = str2num(instruct.timesteps);
+eatingTimeOffset = str2num(instruct.eatingTimeOffset);
 
 %================================= END OF SPECIFIC CODE - CUT HERE ========
 %% CALCULATIONS, FUNCTION CALLS AND MAIN PROGRAM %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,9 +43,13 @@ for i = 1 : philosopherCount
     % generate random number 0 < r <= 10
     switch dist
         case 'uniform'
-            r = 1 + fix(random('uniform',0,9));
+            r = 1 + fix(random('uniform',0,10));
         case 'normal'
-            r = 1 + fix(random('normal',mu,sigma));
+            r = 1 + fix(random('normal',var1,var2));
+        case 'exponential'
+            r = 1 + fix(random('exponential',var1));
+        case 'beta'
+            r = 1 + fix(random('beta',var1,var2) * 10);
     end
 
     if r > 10
@@ -97,9 +95,13 @@ for i = 1 : timesteps
                 if (philosopherAutomaton(i, rightPhilosopher) > 20 || philosopherAutomaton(i,rightPhilosopher) <= 11)            
                     switch dist
                         case 'uniform'
-                            r = fix(random('uniform',(0+eatingTimeOffset),9));
+                            r = fix(random('uniform',(0+eatingTimeOffset),10));
                         case 'normal'
-                            r = eatingTimeOffset + fix(random('normal',mu,sigma) - eatingTimeOffset);
+                            r = eatingTimeOffset + fix(random('normal',var1,var2) - eatingTimeOffset);
+                        case 'exponential'
+                            r = eatingTimeOffset + fix(random('exponential',var1) - eatingTimeOffset);
+                        case 'beta'
+                            r = eatingTimeOffset + fix((random('beta',var1,var2) * 10) - eatingTimeOffset);
                     end
 
                     if r > 9
@@ -122,9 +124,13 @@ for i = 1 : timesteps
         elseif s == 10
             switch dist
                 case 'uniform'
-                    r = fix(random('uniform',0,9));
+                    r = fix(random('uniform',0,10));
                 case 'normal'
-                    r = fix(random('normal',mu,sigma));
+                    r = fix(random('normal',var1,var2));
+                case 'exponential'
+                    r = fix(random('exponential',var1));
+                case 'beta'
+                    r = fix(random('beta',var1,var2) * 10);
             end
             if r > 9
                 r = 9;
@@ -188,29 +194,71 @@ ylabel('philosophers');
 legend('thinking', 'eating', 'starving')
 hold off;
     
-Pic2 = figure('visible','on');
+Pic2 = figure('visible','off');
 
-x = 0:0.1:10;
+histogramData = zeros(10,1);
+for i = 1 : length(sampledValues)
+    index = sampledValues(i);
+    histogramData(index) = histogramData(index) + 1;
+end
+histogramSum = sum(histogramData);
+
+x = 1:0.1:10;
 hold on;
 switch dist
     case 'uniform'
-        histogram(sampledValues,'Normalization','probability','FaceColor','blue','FaceAlpha',0.3);
+        for i = 1:10
+            if histogramData(i) > 0
+            plot( [i i],[0 (histogramData(i)/histogramSum)], 'Color','blue','LineWidth',20)
+            end
+        end
+        l = plot( [0 0],[0 0], 'Color','blue','LineWidth',3);
         y = unifpdf(x,0,10);
-        plot(x,y, 'LineWidth',3,'Color','red');
-        legend('values','pdf');
+        pdf = plot(x,y, 'LineWidth',3,'Color','red');
+        legend([l pdf],'values','pdf');
 
     case 'normal'
-        histogram(sampledValues,'Normalization','probability','FaceColor','blue','FaceAlpha',0.3);
-        y = normpdf(x, mu, sigma);
-        plot(x,y, 'LineWidth',3,'Color','red');
-        plot( [mu mu],[0 max(y)],'--', 'Color','blue','LineWidth',3)
-        plot( [mu - sigma mu - sigma],[0 max(y)],'--', 'Color','red','LineWidth',2)
-        plot( [mu + sigma mu + sigma],[0 max(y)],'--', 'Color','red','LineWidth',2)
-        legend('values','pdf', 'mu', 'mu +/- sigma');
+
+        for i = 1:10
+            if histogramData(i) > 0
+            plot( [i i],[0 (histogramData(i)/histogramSum)], 'Color','blue','LineWidth',20)
+            end
+        end
         
+        l = plot( [0 0],[0 0], 'Color','blue','LineWidth',3);
+        y = normpdf(x, var1, var2);
+        pdf = plot(x,y, 'LineWidth',3,'Color','red');
+        mul = plot( [var1 var1],[0 max(y)],'--', 'Color','green','LineWidth',3);
+        rsl = plot( [var1 - var2 var1 - var2],[0 max(y)],'--', 'Color','red','LineWidth',2);
+        lsl = plot( [var1 + var2 var1 + var2],[0 max(y)],'--', 'Color','red','LineWidth',2);
+        legend([l pdf mul rsl lsl],'values','pdf', 'mu', 'mu +/- sigma');
+
+    case 'exponential'
+        for i = 1:10
+            if histogramData(i) > 0
+            plot( [i i],[0 (histogramData(i)/histogramSum)], 'Color','blue','LineWidth',20)
+            end
+        end
+        l = plot( [0 0],[0 0], 'Color','blue','LineWidth',3);
+        y = exppdf(x,var1);
+        pdf = plot(x,y, 'LineWidth',3,'Color','red');
+        mul = plot( [var1 var1],[0 max(y)],'--', 'Color','green','LineWidth',3);
+        legend([l pdf mul],'values','pdf', 'mu');
+
+    case 'beta'
+        x = 0:0.01:1;
+        for i = 1:10
+            if histogramData(i) > 0
+            plot( [i i],[0 (histogramData(i)/histogramSum)], 'Color','blue','LineWidth',20)
+            end
+        end
+        l = plot( [0 0],[0 0], 'Color','blue','LineWidth',3);
+        y = betapdf(x,var1,var2)/9;
+        pdf = plot(1+x*10,y, 'LineWidth',3,'Color','red');
+        legend([l pdf],'values','pdf');
 end
 
-
+xlim([0,11])
 hold off;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -218,14 +266,11 @@ hold off;
 % disables graphical output on the remote system. Switch ’on’ at home.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %================================= BEGIN OF SPECIFIC CODE - CUT HERE ======
-% r=adamInitialize();
-% r=adamRenderText(r,instruct,ret,'Indicators');
-% 
-% % produces textual output.
-% r=adamRenderImage(r,instruct,Pic1,'Gantt Chart of CA');
-% r=adamRenderImage(r,instruct,Pic2,'Ratio of Total States');
-% % produces a *.png image for graphical output.
-% retstr=adamComposeResultString(r);
+r=adamInitialize();
+r=adamRenderImage(r,instruct,Pic1,'Gantt Chart of CA');
+r=adamRenderImage(r,instruct,Pic2,'Sample Distribution Pdf');
+% produces a *.png image for graphical output.
+retstr=adamComposeResultString(r);
 % %================================= END OF SPECIFIC CODE - CUT HERE ========
 %================================= BEGIN OF SPECIFIC CODE - CUT HERE ======
 %% END OF EXAMPLE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
