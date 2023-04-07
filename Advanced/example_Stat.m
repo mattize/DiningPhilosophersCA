@@ -1,4 +1,4 @@
-function retstr = example_Ind(instruct)
+function retstr = example_Stat(instruct)
 % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 % Short description of example:
 %
@@ -21,8 +21,13 @@ function retstr = example_Ind(instruct)
 % Input values from the web-interface must be extracted from a text string.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Extraction of input variables from a text string.
-% simRuns=str2num(instruct.sim_runs);
-simRuns = 50;
+% simRuns=str2num(instruct.simRuns);
+% displayOffset = str2num(instruct.showOffset);
+% offsetFunction = instruct.offsetFunction;
+simRuns = 100;
+displayOffset = false;
+offsetFunction = 'random';
+
 %================================= END OF SPECIFIC CODE - CUT HERE ========
 %% CALCULATIONS, FUNCTION CALLS AND MAIN PROGRAM %%%%%%%%%%%%%%%%%%%%%%%%%%
 % All general calculations and operations come here.
@@ -42,8 +47,27 @@ for k = 1 : simRuns
     philosopherCount = 3 + fix(rand(1) * 7);
     timesteps = 10 + fix(rand(1) * 500);
     simulatedTimesteps(k) = timesteps;
-    simulatedPhilosophers(k) = philosopherCount;
-    eatingTimeOffset = 1 + fix(rand(1) * 8);
+    simulatedPhilosophers(k) = philosopherCount;     
+
+    switch offsetFunction
+        case 'sin'
+            eatingTimeOffset = fix(sin(k) * 5) + 5;
+        case 'cubic'
+            eatingTimeOffset = fix(0.0000001461039*k^(3) - 0.0002335497835*k^(2) + 0.0802489177489*k + 2);
+        case 'none'
+            eatingTimeOffset = 0;
+        case 'random'
+            eatingTimeOffset = fix(rand(1) * 9);
+        case 'constant'
+            eatingTimeOffset = 5;
+    end
+
+    if eatingTimeOffset < 0
+        eatingTimeOffset = 0;
+    elseif eatingTimeOffset > 9
+        eatingTimeOffset = 9;
+    end
+    
     simulatedOffset(k) = eatingTimeOffset;
 
     % init CA
@@ -52,7 +76,8 @@ for k = 1 : simRuns
 
     avgRunEatingTimes = [];
     avgRunThinkingTimes = [];
-    avgStarvingTimes = [];
+    avgRunStarvingTimes = [];
+    starvingHelpCounter = zeros(1,philosopherCount);
     
     for i = 1 : philosopherCount
         % generate random number 0 < r <= 10
@@ -96,11 +121,20 @@ for k = 1 : simRuns
                         philosopherAutomaton(nextTimeStep,j) = 11+r;
                         avgRunEatingTimes = vertcat(avgRunEatingTimes, 1+r);
                         totalEatingStates = totalEatingStates + 1+r;
+                        if starvingHelpCounter(1,j) > 0
+                            avgRunStarvingTimes = vertcat(avgRunThinkingTimes,starvingHelpCounter(1,j));
+                            if (isnan(starvingHelpCounter(1,j)))
+                                starvingHelpCounter(1,j) = 1;
+                            end
+                            starvingHelpCounter(1,j) = 0;
+                        end
                     else
                         philosopherAutomaton(nextTimeStep,j) = 22;
+                        starvingHelpCounter(1,j) = starvingHelpCounter(1,j) + 1;
                     end
                 else
                     philosopherAutomaton(nextTimeStep,j) = 21;
+                    starvingHelpCounter(1,j) = starvingHelpCounter(1,j) + 1;
                 end
     
                 % finished eating
@@ -120,10 +154,15 @@ for k = 1 : simRuns
         
     end
 
-    avgEatingTimes(k) = sum(avgRunEatingTimes)/length(avgRunEatingTimes);
-    avgThinkingTimes(k) = sum(avgRunThinkingTimes)/length(avgRunThinkingTimes);
-
-
+    if ~isempty(avgRunEatingTimes)
+        avgEatingTimes(k) = mean(avgRunEatingTimes);
+    end
+    if ~isempty(avgRunThinkingTimes)
+        avgThinkingTimes(k) = mean(avgRunThinkingTimes);
+    end
+    if ~isempty(avgRunStarvingTimes)
+        avgStarvingTimes(k) = mean(avgRunStarvingTimes);
+    end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -131,19 +170,26 @@ end
 % Graphical output is generated here.
 
 Pic1 = figure('visible','on');
+
+
+
 hold on;
 
-plot(1:simRuns,avgEatingTimes);
-plot(1:simRuns, avgThinkingTimes);
-% scatter(1:simRuns, simulatedOffset);
+plot(1:simRuns,avgEatingTimes, 'Color','green','LineWidth',2);
+plot(1:simRuns, avgThinkingTimes, 'Color','blue','LineWidth',2);
+plot(1:simRuns, avgStarvingTimes,'Color','red','LineWidth',2);
+if displayOffset
+    plot(1:simRuns, simulatedOffset, 'Color','magenta');
+end
 
-legend('average Eating Times', 'average Thinking Time', 'philosophers');
+
+legend('average Eating Times', 'average Thinking Time', 'average Starving Time','Eating Time Offset');
 
 
 grid on;
 hold off;
 
-Pic2 = figure('visible', 'on');
+Pic2 = figure('visible', 'off');
 hold on;
 
 data = [totalAutomatonStates - (totalThinkingStates + totalEatingStates) totalEatingStates totalThinkingStates];
@@ -152,9 +198,21 @@ legend({'starving States', 'eating States', 'thinkingStates'});
 xlim([-1.5 1.5])
 ylim([-1.5 1.5])
 
+Pic3 = figure('visible','off');
 
+totalAvgThinking = mean(avgThinkingTimes);
+totalAvgEating = mean(avgEatingTimes);
+totalAvgStarving = mean(avgStarvingTimes);
+
+hold on;
+plot([0 simRuns],[totalAvgEating totalAvgEating], 'Color','green','LineWidth',2);
+plot([0 simRuns], [totalAvgThinking totalAvgThinking], 'Color','blue','LineWidth',2);
+plot([0 simRuns], [totalAvgStarving totalAvgStarving],'Color','red','LineWidth',2);
     
-
+legend('Total Average Eating Time','Total Average Thinking Time','Total Average Starving Time' );
+grid on;
+ylim([0 10]);
+hold off;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -162,7 +220,9 @@ ylim([-1.5 1.5])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %================================= BEGIN OF SPECIFIC CODE - CUT HERE ======
 % r=adamInitialize();
-% r=adamRenderImage(r,instruct,Pic,'Gantt Chart of CA');
+% r=adamRenderImage(r,instruct,Pic1,'Gantt Chart of CA');
+% r=adamRenderImage(r,instruct,Pic2,'Gantt Chart of CA');
+% r=adamRenderImage(r,instruct,Pic3,'Gantt Chart of CA');
 % % produces a *.png image for graphical output.
 % retstr=adamComposeResultString(r);
 %================================= END OF SPECIFIC CODE - CUT HERE ========
