@@ -21,12 +21,9 @@ function retstr = example_Stat(instruct)
 % Input values from the web-interface must be extracted from a text string.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Extraction of input variables from a text string.
-% simRuns=str2num(instruct.simRuns);
-% displayOffset = str2num(instruct.showOffset);
-% offsetFunction = instruct.offsetFunction;
-simRuns = 100;
-displayOffset = false;
-offsetFunction = 'random';
+simRuns=str2num(instruct.simRuns);
+displayOffset = str2num(instruct.showOffset);
+offsetFunction = instruct.offsetFunction;
 
 %================================= END OF SPECIFIC CODE - CUT HERE ========
 %% CALCULATIONS, FUNCTION CALLS AND MAIN PROGRAM %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -219,12 +216,12 @@ hold off;
 % disables graphical output on the remote system. Switch ’on’ at home.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %================================= BEGIN OF SPECIFIC CODE - CUT HERE ======
-% r=adamInitialize();
-% r=adamRenderImage(r,instruct,Pic1,'Gantt Chart of CA');
-% r=adamRenderImage(r,instruct,Pic2,'Gantt Chart of CA');
-% r=adamRenderImage(r,instruct,Pic3,'Gantt Chart of CA');
-% % produces a *.png image for graphical output.
-% retstr=adamComposeResultString(r);
+r=adamInitialize();
+r=adamRenderImage(r,instruct,Pic1,'Gantt Chart of CA');
+r=adamRenderImage(r,instruct,Pic2,'Gantt Chart of CA');
+r=adamRenderImage(r,instruct,Pic3,'Gantt Chart of CA');
+% produces a *.png image for graphical output.
+retstr=adamComposeResultString(r);
 %================================= END OF SPECIFIC CODE - CUT HERE ========
 %================================= BEGIN OF SPECIFIC CODE - CUT HERE ======
 %% END OF EXAMPLE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
