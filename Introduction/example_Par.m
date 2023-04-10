@@ -34,8 +34,9 @@ eatingTimeOffset = str2num(instruct.eatingTimeOffset);
 %% CALCULATIONS, FUNCTION CALLS AND MAIN PROGRAM %%%%%%%%%%%%%%%%%%%%%%%%%%
 % All general calculations and operations come here.
 
+sampledEatingValues = [];
+sampledThinkingValues = [];
 sampledValues = [];
-
 % init CA
 philosopherAutomaton = zeros(timesteps, philosopherCount);
 
@@ -59,6 +60,7 @@ for i = 1 : philosopherCount
     end
     % set initial meditation state r for philosopher i
     philosopherAutomaton(1, i) = r;
+    sampledThinkingValues = vertcat(sampledThinkingValues, r);
     sampledValues = vertcat(sampledValues, r);
 end
 
@@ -95,21 +97,29 @@ for i = 1 : timesteps
                 if (philosopherAutomaton(i, rightPhilosopher) > 20 || philosopherAutomaton(i,rightPhilosopher) <= 11)            
                     switch dist
                         case 'uniform'
-                            r = fix(random('uniform',(0+eatingTimeOffset),10));
+                            r = fix(random('uniform',(0),10));
                         case 'normal'
-                            r = eatingTimeOffset + fix(random('normal',var1,var2) - eatingTimeOffset);
+                            r = fix(random('normal',var1,var2));
                         case 'exponential'
-                            r = eatingTimeOffset + fix(random('exponential',var1) - eatingTimeOffset);
+                            r = fix(random('exponential',var1));
                         case 'beta'
-                            r = eatingTimeOffset + fix((random('beta',var1,var2) * 10) - eatingTimeOffset);
+                            r = fix((random('beta',var1,var2) * 10));
                     end
+
+                    if r < 0
+                        r = 0;
+                    end
+
+                    r = r + eatingTimeOffset;
 
                     if r > 9
                         r = 9;
                     elseif r < 0
                         r = 0;
                     end
-                    sampledValues = vertcat(sampledValues, (1+r));
+
+                    sampledEatingValues = vertcat(sampledEatingValues, (1+r));
+                    sampledValues = vertcat(sampledValues, 1+r);
 
                     philosopherAutomaton(nextTimeStep,j) = 11+r;
                 else
@@ -138,7 +148,8 @@ for i = 1 : timesteps
                 r = 0;
             end
             philosopherAutomaton(nextTimeStep,j) = 1+r;
-            sampledValues = vertcat(sampledValues, (1+r));
+            sampledThinkingValues = vertcat(sampledThinkingValues, (1+r));
+            sampledValues = vertcat(sampledValues, 1+r);
        
             % not state transition
             % decrement step
@@ -194,7 +205,7 @@ ylabel('philosophers');
 legend('thinking', 'eating', 'starving')
 hold off;
     
-Pic2 = figure('visible','off');
+Pic2 = figure('visible','on');
 
 histogramData = zeros(10,1);
 for i = 1 : length(sampledValues)
@@ -215,7 +226,7 @@ switch dist
         l = plot( [0 0],[0 0], 'Color','blue','LineWidth',3);
         y = unifpdf(x,0,10);
         pdf = plot(x,y, 'LineWidth',3,'Color','red');
-        legend([l pdf],'values','pdf');
+        legend([l pdf],'Total sampled values','pdf');
 
     case 'normal'
 
@@ -231,7 +242,7 @@ switch dist
         mul = plot( [var1 var1],[0 max(y)],'--', 'Color','green','LineWidth',3);
         rsl = plot( [var1 - var2 var1 - var2],[0 max(y)],'--', 'Color','red','LineWidth',2);
         lsl = plot( [var1 + var2 var1 + var2],[0 max(y)],'--', 'Color','red','LineWidth',2);
-        legend([l pdf mul rsl lsl],'values','pdf', 'mu', 'mu +/- sigma');
+        legend([l pdf mul rsl lsl],'Total sampled values','pdf', 'mu', 'mu +/- sigma');
 
     case 'exponential'
         for i = 1:10
@@ -243,7 +254,7 @@ switch dist
         y = exppdf(x,var1);
         pdf = plot(x,y, 'LineWidth',3,'Color','red');
         mul = plot( [var1 var1],[0 max(y)],'--', 'Color','green','LineWidth',3);
-        legend([l pdf mul],'values','pdf', 'mu');
+        legend([l pdf mul],'Total sampled values','pdf', 'mu');
 
     case 'beta'
         x = 0:0.01:1;
@@ -255,7 +266,141 @@ switch dist
         l = plot( [0 0],[0 0], 'Color','blue','LineWidth',3);
         y = betapdf(x,var1,var2)/9;
         pdf = plot(1+x*10,y, 'LineWidth',3,'Color','red');
-        legend([l pdf],'values','pdf');
+        legend([l pdf],'Total sampled values','pdf');
+end
+
+xlim([0,11])
+hold off;
+
+Pic3 = figure('visible','on');
+
+histogramData = zeros(10,1);
+for i = 1 : length(sampledThinkingValues)
+    index = sampledThinkingValues(i);
+    histogramData(index) = histogramData(index) + 1;
+end
+histogramSum = sum(histogramData);
+
+x = 1:0.1:10;
+hold on;
+switch dist
+    case 'uniform'
+        for i = 1:10
+            if histogramData(i) > 0
+            plot( [i i],[0 (histogramData(i)/histogramSum)], 'Color','blue','LineWidth',20)
+            end
+        end
+        l = plot( [0 0],[0 0], 'Color','blue','LineWidth',3);
+        y = unifpdf(x,0,10);
+        pdf = plot(x,y, 'LineWidth',3,'Color','red');
+        legend([l pdf],'Sampled thinking values','pdf');
+
+    case 'normal'
+
+        for i = 1:10
+            if histogramData(i) > 0
+            plot( [i i],[0 (histogramData(i)/histogramSum)], 'Color','blue','LineWidth',20)
+            end
+        end
+        
+        l = plot( [0 0],[0 0], 'Color','blue','LineWidth',3);
+        y = normpdf(x, var1, var2);
+        pdf = plot(x,y, 'LineWidth',3,'Color','red');
+        mul = plot( [var1 var1],[0 max(y)],'--', 'Color','green','LineWidth',3);
+        rsl = plot( [var1 - var2 var1 - var2],[0 max(y)],'--', 'Color','red','LineWidth',2);
+        lsl = plot( [var1 + var2 var1 + var2],[0 max(y)],'--', 'Color','red','LineWidth',2);
+        legend([l pdf mul rsl lsl],'Sampled thinking values','pdf', 'mu', 'mu +/- sigma');
+
+    case 'exponential'
+        for i = 1:10
+            if histogramData(i) > 0
+            plot( [i i],[0 (histogramData(i)/histogramSum)], 'Color','blue','LineWidth',20)
+            end
+        end
+        l = plot( [0 0],[0 0], 'Color','blue','LineWidth',3);
+        y = exppdf(x,var1);
+        pdf = plot(x,y, 'LineWidth',3,'Color','red');
+        mul = plot( [var1 var1],[0 max(y)],'--', 'Color','green','LineWidth',3);
+        legend([l pdf mul],'Sampled thinking values','pdf', 'mu');
+
+    case 'beta'
+        x = 0:0.01:1;
+        for i = 1:10
+            if histogramData(i) > 0
+            plot( [i i],[0 (histogramData(i)/histogramSum)], 'Color','blue','LineWidth',20)
+            end
+        end
+        l = plot( [0 0],[0 0], 'Color','blue','LineWidth',3);
+        y = betapdf(x,var1,var2)/9;
+        pdf = plot(1+x*10,y, 'LineWidth',3,'Color','red');
+        legend([l pdf],'Sampled thinking values','pdf');
+end
+
+xlim([0,11])
+hold off;
+
+Pic4 = figure('visible','on');
+
+histogramData = zeros(10,1);
+for i = 1 : length(sampledEatingValues)
+    index = sampledEatingValues(i);
+    histogramData(index) = histogramData(index) + 1;
+end
+histogramSum = sum(histogramData);
+
+x = 1:0.1:10;
+hold on;
+switch dist
+    case 'uniform'
+        for i = 1:10
+            if histogramData(i) > 0
+            plot( [i i],[0 (histogramData(i)/histogramSum)], 'Color','blue','LineWidth',20)
+            end
+        end
+        l = plot( [0 0],[0 0], 'Color','blue','LineWidth',3);
+        y = unifpdf(x,0,10);
+        pdf = plot(x,y, 'LineWidth',3,'Color','red');
+        legend([l pdf],'Sampled eating values','pdf');
+
+    case 'normal'
+
+        for i = 1:10
+            if histogramData(i) > 0
+            plot( [i i],[0 (histogramData(i)/histogramSum)], 'Color','blue','LineWidth',20)
+            end
+        end
+        
+        l = plot( [0 0],[0 0], 'Color','blue','LineWidth',3);
+        y = normpdf(x, var1, var2);
+        pdf = plot(x,y, 'LineWidth',3,'Color','red');
+        mul = plot( [var1 var1],[0 max(y)],'--', 'Color','green','LineWidth',3);
+        rsl = plot( [var1 - var2 var1 - var2],[0 max(y)],'--', 'Color','red','LineWidth',2);
+        lsl = plot( [var1 + var2 var1 + var2],[0 max(y)],'--', 'Color','red','LineWidth',2);
+        legend([l pdf mul rsl lsl],'Sampled eating values','pdf', 'mu', 'mu +/- sigma');
+
+    case 'exponential'
+        for i = 1:10
+            if histogramData(i) > 0
+            plot( [i i],[0 (histogramData(i)/histogramSum)], 'Color','blue','LineWidth',20)
+            end
+        end
+        l = plot( [0 0],[0 0], 'Color','blue','LineWidth',3);
+        y = exppdf(x,var1);
+        pdf = plot(x,y, 'LineWidth',3,'Color','red');
+        mul = plot( [var1 var1],[0 max(y)],'--', 'Color','green','LineWidth',3);
+        legend([l pdf mul],'Sampled eating values','pdf', 'mu');
+
+    case 'beta'
+        x = 0:0.01:1;
+        for i = 1:10
+            if histogramData(i) > 0
+            plot( [i i],[0 (histogramData(i)/histogramSum)], 'Color','blue','LineWidth',20)
+            end
+        end
+        l = plot( [0 0],[0 0], 'Color','blue','LineWidth',3);
+        y = betapdf(x,var1,var2)/9;
+        pdf = plot(1+x*10,y, 'LineWidth',3,'Color','red');
+        legend([l pdf],'Sampled eating values','pdf');
 end
 
 xlim([0,11])
@@ -263,12 +408,14 @@ hold off;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% disables graphical output on the remote system. Switch ’on’ at home.
+% disables graphical output on the remote system. Switch â€™onâ€™ at home.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %================================= BEGIN OF SPECIFIC CODE - CUT HERE ======
 r=adamInitialize();
 r=adamRenderImage(r,instruct,Pic1,'Gantt Chart of CA');
 r=adamRenderImage(r,instruct,Pic2,'Sample Distribution Pdf');
+r=adamRenderImage(r,instruct,Pic3,'Sampled Thinking Values');
+r=adamRenderImage(r,instruct,Pic4,'Sampled Eating Values');
 % produces a *.png image for graphical output.
 retstr=adamComposeResultString(r);
 % %================================= END OF SPECIFIC CODE - CUT HERE ========

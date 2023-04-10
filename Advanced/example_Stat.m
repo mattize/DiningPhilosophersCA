@@ -25,6 +25,7 @@ simRuns=str2num(instruct.simRuns);
 displayOffset = str2num(instruct.showOffset);
 offsetFunction = instruct.offsetFunction;
 
+
 %================================= END OF SPECIFIC CODE - CUT HERE ========
 %% CALCULATIONS, FUNCTION CALLS AND MAIN PROGRAM %%%%%%%%%%%%%%%%%%%%%%%%%%
 % All general calculations and operations come here.
@@ -119,10 +120,10 @@ for k = 1 : simRuns
                         avgRunEatingTimes = vertcat(avgRunEatingTimes, 1+r);
                         totalEatingStates = totalEatingStates + 1+r;
                         if starvingHelpCounter(1,j) > 0
-                            avgRunStarvingTimes = vertcat(avgRunThinkingTimes,starvingHelpCounter(1,j));
                             if (isnan(starvingHelpCounter(1,j)))
                                 starvingHelpCounter(1,j) = 1;
                             end
+                            avgRunStarvingTimes = vertcat(avgRunThinkingTimes,starvingHelpCounter(1,j));
                             starvingHelpCounter(1,j) = 0;
                         end
                     else
@@ -213,7 +214,7 @@ hold off;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% disables graphical output on the remote system. Switch ’on’ at home.
+% disables graphical output on the remote system. Switch â€™onâ€™ at home.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %================================= BEGIN OF SPECIFIC CODE - CUT HERE ======
 r=adamInitialize();
